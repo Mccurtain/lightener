@@ -1,6 +1,8 @@
 <div align="center">
 
 # 荷丛（Lightener）
+**简体中文** | [English](README_EN.md)
+
 <img alt="许可证" src="https://img.shields.io/badge/License-MIT-263146?style=flat-square">
 
 > 你是否还在为“这个东西该不该扔”耗费心神？
@@ -13,6 +15,7 @@
 
 
 </div>
+
 
 ## 立意
 **为什么叫「荷丛 / Lightener」**
