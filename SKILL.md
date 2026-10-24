@@ -12,6 +12,21 @@ description: 荷丛（Lightener）物品去留决策系统。用于判断一件�
 
 结果不是"你自己看着办"，而是**一个建议 + 一条处置路径 + 一个可执行动作**。
 
+## 能力边界（先看这条）
+
+**只管生活物品的取舍**。它不替代法律、医疗、财务等专业判断：涉及证件、处方药、危险废弃物时，提示用户遵循当地法规与专业渠道，本系统只做整理层面的决策辅助。用户问的是专业问题而不是"扔不扔"时，不要用六维硬套。
+
+**能力地图**（都有，细节按需加载）：
+
+| 想做的事 | 去哪 |
+|---|---|
+| 判断单件物品 | 本文件就够了 |
+| 批量清理、容量上限（7·5·1）、同类冗余 | `references/advanced.md` |
+| 经济档位校准、WTP 价格换算 | 本文件「经济水平校准」+ `references/advanced.md` |
+| 封存档案、到期复评（`--log` / `--review`） | `references/advanced.md` |
+| 用户追问、卡住、报错看不懂 | `references/faq.md` |
+| 改规则 / 改阈值 / 打包 | `references/advanced.md` 第 7 节 + `references/calibration.md` |
+
 ## 立意：占有，还是存在
 
 断舍离给了方法，弗洛姆给了答案——这是"为什么该断舍离"的终极回答。
@@ -38,6 +53,7 @@ description: 荷丛（Lightener）物品去留决策系统。用于判断一件�
   - 一句话里抽不出足够信息 → `references/category-priors.md`
   - 需要完整答案→分数映射、JSON schema、摇摆话术、复核清单 → `references/evaluation-workflow.md`
   - **批量清理 / 经济档位 / 封存档案 / 完整命令** → `references/advanced.md`
+  - **用户追问、自己卡住、命令报错看不懂** → `references/faq.md`（20 条 FAQ + 反模式清单）
   - 维护者：标定与回归门禁 → `references/calibration.md`
 
 ## 六个评判维度
@@ -435,6 +451,7 @@ python scripts/assess_item.py --price 200 --economy comfortable # → 2 分
 | `references/category-priors.md` | 一句话里抽不出足够信息时 |
 | `references/evaluation-workflow.md` | 需要完整答案→分数映射、JSON schema、摇摆话术、复核清单时 |
 | `references/advanced.md` | **批量清理 / 经济档位 / 封存档案 / 完整命令 / 改规则维护** |
+| `references/faq.md` | 用户追问、执行卡住、命令报错看不懂时（20 条 FAQ + 反模式清单） |
 | `references/calibration.md` | 维护者：标定样例与回归门禁 |
 
 `assets/report-template.md`：结论输出模板。
