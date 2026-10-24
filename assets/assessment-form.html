@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>荷丛 Lightener · 物品去留决策系统</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:#f5f5f4;color:#1c1917;margin:0;padding:24px;line-height:1.6}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:22px;margin:0}
+.tagline{color:#78716c;font-size:13px;margin:2px 0 20px}
+.panel{background:#fff;border-radius:12px;padding:18px 22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.panel h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.panel h2 span{background:#0d9488;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.row label.fixed{width:110px;font-size:14px;flex:none}
+button{cursor:pointer;border:1px solid #d6d3d1;background:#fff;border-radius:8px;padding:6px 10px;font-size:13px;font-family:inherit}
+button:hover{border-color:#0d9488;color:#0d9488}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.presets button.on{background:#0d9488;color:#fff;border-color:#0d9488}
+.sliders{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px 18px}
+.sliders .row{margin:0}
+input[type=range]{flex:1}
+.wval{width:44px;text-align:right;font-size:13px;color:#57534e}
+.hint{font-size:12px;color:#a8a29e;margin:8px 0 0}
+input[type=text]{border:1px solid #d6d3d1;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;width:100%}
+select{border:1px solid #d6d3d1;border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;width:100%;margin-top:8px;background:#fff}
+.chint{font-size:12px;color:#0d9488;margin:6px 0 0}
+.dim{border-top:1px solid #f0efee;padding:12px 0}
+.dim:first-of-type{border-top:none}
+.dimhead{font-size:14px;font-weight:600}
+.dimq{font-size:12px;color:#78716c;margin:2px 0 8px}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opt{min-width:60px;text-align:left;font-size:12px;padding:5px 8px}
+.opt.on{background:#0d9488;color:#fff;border-color:#0d9488}
+.opts .opt b{font-weight:700;margin-right:4px}
+.ev{margin-top:8px;font-size:12px;width:100%}
+.flags{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#57534e;margin-top:6px}
+.actions{margin-top:14px;display:flex;gap:10px}
+.primary{background:#0d9488;color:#fff;border-color:#0d9488;padding:8px 18px}
+.primary:hover{background:#0f766e;color:#fff}
+.card{border:1px solid #e7e5e4;border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.card header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card h3{margin:0;font-size:16px}
+.badge{color:#fff;padding:3px 12px;border-radius:999px;font-size:12px;white-space:nowrap}
+.gauge{height:12px;background:#e7e5e4;border-radius:999px;overflow:hidden;margin:10px 0 4px}
+.gauge span{display:block;height:100%;transition:width .25s}
+.total{font-size:13px;color:#57534e}
+.scale{font-size:11px;color:#a8a29e;margin:0 0 8px}
+.action{background:#fafaf9;border-left:3px solid #d6d3d1;padding:8px 12px;font-size:13px;margin:0 0 10px}
+.dbars{display:grid;gap:4px}
+.dbar{display:grid;grid-template-columns:88px 1fr 96px;align-items:center;gap:8px;font-size:12px}
+.dbar .t{background:#e7e5e4;height:8px;border-radius:4px;overflow:hidden}
+.dbar .t span{display:block;height:100%;background:#0d9488}
+.dbar .m{color:#78716c}
+.reasons{color:#b45309;font-size:12px;margin:8px 0 0;padding-left:18px}
+.bias{background:#f5f3ff;border-left:3px solid #7c3aed;color:#5b21b6;font-size:12px;margin:10px 0 0;padding:8px 12px 8px 28px;border-radius:0 6px 6px 0}
+.flagsline{color:#b91c1c;font-size:12px;margin:6px 0 0}
+.del{font-size:12px;color:#a8a29e;border:none;background:none;padding:0}
+.del:hover{color:#dc2626}
+.prio{border:1px dashed #d6d3d1;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:13px}
+.prio ol{margin:6px 0 0;padding-left:20px}
+.empty{color:#a8a29e;font-size:13px;text-align:center;padding:24px 0}
+footer{color:#a8a29e;font-size:12px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>荷丛 Lightener · 物品去留决策系统</h1>
+  <p class="tagline">六个维度量化打分，加权汇总，给出明确的丢弃或保留建议</p>
+
+  <section class="panel">
+    <h2><span>1</span>权重方案</h2>
+    <div class="presets" id="presets"></div>
+    <div class="sliders" id="sliders"></div>
+    <p class="hint" id="whint">拖动滑块可微调权重，未指定部分自动归一化。</p>
+    <div class="row" style="margin-top:12px">
+      <label class="fixed">经济档位</label>
+      <select id="economy" style="flex:1"></select>
+    </div>
+    <p class="chint" id="ehint"></p>
+  </section>
+
+  <section class="panel">
+    <h2><span>2</span>物品信息</h2>
+    <input type="text" id="item-name" placeholder="物品名称，如：旧登山杖">
+    <select id="item-category"></select>
+    <p class="chint" id="chint"></p>
+    <div id="dims"></div>
+    <div class="flags" id="flags"></div>
+    <div class="actions">
+      <button class="primary" id="add">加入评估</button>
+      <button id="reset">清空本件</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2><span>3</span>评估结果</h2>
+    <div id="priority"></div>
+    <div id="results"><p class="empty">还没有评估任何物品</p></div>
+    <div class="actions">
+      <button id="export">导出 JSON</button>
+      <button id="copy">复制结果文本</button>
+      <button id="clear">清空全部</button>
+    </div>
+  </section>
+
+  <footer>只挑你看到的事实，判断交给系统　·　衡量此刻的生活，不是仓库里存着什么</footer>
+</div>
+
+<script id="rules-data" type="application/json">
+/* RULES:BEGIN */
+{
+ "scale": 5,
+ "dimensions": [
+  {
+   "key": "usage",
+   "name": "使用频率",
+   "q": "上一次真正用到它，是什么时候？",
+   "opts": [
+    "最近一两周还在用",
+    "最近几个月用过",
+    "大概一年前",
+    "去年或更早，一年里偶尔用",
+    "想不起来上次是什么时候",
+    "买来就没怎么用过 / 从没用过"
+   ]
+  },
+  {
+   "key": "future",
+   "name": "未来需求",
+   "q": "接下来一年，有没有具体哪件事会用到它？",
+   "opts": [
+    "已经定好了，肯定会用",
+    "有固定的时候（换季、过年、每年一次）",
+    "能想到具体场景，但不确定",
+    "说不准，就是觉得万一用得上",
+    "想不出什么事",
+    "情况变了，肯定用不上了"
+   ]
+  },
+  {
+   "key": "condition",
+   "name": "功能状态",
+   "q": "现在还能用吗？",
+   "opts": [
+    "能，跟新的差不多",
+    "能用，有正常使用痕迹",
+    "能用，但得修一下或换配件",
+    "得大修才行",
+    "勉强能用，快不行了",
+    "用不了了：坏了 / 过期 / 变质"
+   ]
+  },
+  {
+   "key": "replace",
+   "name": "替代难度",
+   "q": "如果现在需要，还能再弄到一个吗？",
+   "opts": [
+    "弄不到了：绝版、独一无二、别人手工做的",
+    "能，但很贵，或者得费劲找",
+    "得专门跑一趟或下单等几天",
+    "网上随手就能买，也不贵",
+    "随处都有，很便宜",
+    "家里还有好几个"
+   ]
+  },
+  {
+   "key": "sentiment",
+   "name": "情感价值",
+   "q": "它是从哪来的？",
+   "opts": [
+    "重要的人给的或留下的",
+    "某次特别的经历带回来的",
+    "自己买的，用了很久有点感情",
+    "有点喜欢，没什么特别来历",
+    "随手买的 / 别人给的，无感",
+    "看到就烦，或连着不愉快的事"
+   ]
+  },
+  {
+   "key": "space",
+   "name": "空间友好度",
+   "q": "它现在放在哪儿，占多大地方？",
+   "opts": [
+    "随手就能拿到，几乎不占地方",
+    "收在一个小格子里",
+    "占一格层板或一个抽屉",
+    "占半个柜子",
+    "算大件，占一整柜",
+    "专门腾了地方：一个角落 / 一间房"
+   ]
+  }
+ ],
+ "presets": {
+  "balanced": {
+   "label": "均衡（默认）",
+   "w": {
+    "usage": 0.25,
+    "future": 0.2,
+    "condition": 0.15,
+    "replace": 0.15,
+    "sentiment": 0.15,
+    "space": 0.1
+   }
+  },
+  "minimalist": {
+   "label": "极简主义",
+   "w": {
+    "usage": 0.35,
+    "future": 0.25,
+    "condition": 0.1,
+    "replace": 0.1,
+    "sentiment": 0.1,
+    "space": 0.1
+   }
+  },
+  "sentimental": {
+   "label": "念旧宽容",
+   "w": {
+    "usage": 0.2,
+    "future": 0.15,
+    "condition": 0.15,
+    "replace": 0.1,
+    "sentiment": 0.3,
+    "space": 0.1
+   }
+  },
+  "space": {
+   "label": "空间优先",
+   "w": {
+    "usage": 0.25,
+    "future": 0.2,
+    "condition": 0.1,
+    "replace": 0.1,
+    "sentiment": 0.05,
+    "space": 0.3
+   }
+  }
+ },
+ "tiers": [
+  [
+   70,
+   "保留",
+   "继续使用",
+   "放回原位，保持随时可取"
+  ],
+  [
+   55,
+   "保留（观察）",
+   "降级存放",
+   "移出黄金位，6 个月后复评"
+  ],
+  [
+   40,
+   "暂存观察",
+   "封存",
+   "装箱标记日期，3-6 个月到期未取用即处理"
+  ],
+  [
+   25,
+   "建议流转",
+   "转赠 / 转卖 / 捐赠",
+   "一周内挂二手或问亲友，无人接手则回收"
+  ],
+  [
+   0,
+   "建议丢弃",
+   "丢弃 / 回收",
+   "按当地规则分类投放或预约回收"
+  ]
+ ],
+ "colors": [
+  "#16a34a",
+  "#65a30d",
+  "#ca8a04",
+  "#ea580c",
+  "#dc2626"
+ ],
+ "categories": {
+  "phone_box": {
+   "label": "手机 / 数码包装盒",
+   "scores": {
+    "usage": 0,
+    "future": 1,
+    "condition": 4,
+    "replace": 1,
+    "sentiment": 1,
+    "space": 4
+   },
+   "ask": [
+    "future",
+    "sentiment"
+   ],
+   "hint": "留着通常只为保修、退换或转卖；没有这些用途就不必留",
+   "flags": [],
+   "digitize": false,
+   "dependent": true
+  },
+  "cable": {
+   "label": "线材 / 充电线 / 小配件",
+   "scores": {
+    "usage": 1,
+    "future": 2,
+    "condition": 3,
+    "replace": 1,
+    "sentiment": 1,
+    "space": 5
+   },
+   "ask": [
+    "usage",
+    "condition"
+   ],
+   "hint": "最容易囤积的品类：只留当前设备正在用的，其余处理",
+   "flags": [],
+   "digitize": false,
+   "dependent": true
+  },
+  "clothing": {
+   "label": "一年以上没穿的衣服",
+   "scores": {
+    "usage": 1,
+    "future": 2,
+    "condition": 4,
+    "replace": 2,
+    "sentiment": 2,
+    "space": 3
+   },
+   "ask": [
+    "sentiment",
+    "condition"
+   ],
+   "hint": "合身与否和情感是主要变量，其余维度可沿用基线",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "book": {
+   "label": "未读 / 已读完的书",
+   "scores": {
+    "usage": 1,
+    "future": 2,
+    "condition": 4,
+    "replace": 2,
+    "sentiment": 2,
+    "space": 3
+   },
+   "ask": [
+    "sentiment",
+    "future"
+   ],
+   "hint": "可转赠或数字化；成套书、签名本另按情感价值加分",
+   "flags": [],
+   "digitize": true,
+   "dependent": false
+  },
+  "manual": {
+   "label": "说明书 / 保修卡 / 票据",
+   "scores": {
+    "usage": 0,
+    "future": 1,
+    "condition": 4,
+    "replace": 1,
+    "sentiment": 1,
+    "space": 5
+   },
+   "ask": [
+    "future"
+   ],
+   "hint": "多数可拍照存档；跟着物件走更有用，单独留存意义不大",
+   "flags": [],
+   "digitize": true,
+   "dependent": true
+  },
+  "packaging": {
+   "label": "包装袋 / 纸箱 / 礼品袋",
+   "scores": {
+    "usage": 2,
+    "future": 3,
+    "condition": 4,
+    "replace": 0,
+    "sentiment": 1,
+    "space": 4
+   },
+   "ask": [
+    "usage"
+   ],
+   "hint": "留少量常用尺寸备用即可，其余压扁回收",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "kitchenware": {
+   "label": "厨具 / 餐具",
+   "scores": {
+    "usage": 3,
+    "future": 4,
+    "condition": 4,
+    "replace": 2,
+    "sentiment": 1,
+    "space": 2
+   },
+   "ask": [
+    "usage"
+   ],
+   "hint": "功能重复的是处理重点，同用途留一件最好用的",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "appliance": {
+   "label": "小家电",
+   "scores": {
+    "usage": 2,
+    "future": 3,
+    "condition": 4,
+    "replace": 2,
+    "sentiment": 1,
+    "space": 2
+   },
+   "ask": [
+    "usage",
+    "condition"
+   ],
+   "hint": "一年没通电、又没有季节用途的，多半不再需要",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "hobby": {
+   "label": "兴趣装备（运动 / 乐器 / 摄影）",
+   "scores": {
+    "usage": 1,
+    "future": 2,
+    "condition": 4,
+    "replace": 3,
+    "sentiment": 2,
+    "space": 2
+   },
+   "ask": [
+    "usage",
+    "future"
+   ],
+   "hint": "关键看这个兴趣还在不在；装备通常还有残值，可转卖",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "gift": {
+   "label": "别人送的摆件 / 礼品",
+   "scores": {
+    "usage": 0,
+    "future": 1,
+    "condition": 4,
+    "replace": 3,
+    "sentiment": 3,
+    "space": 3
+   },
+   "ask": [
+    "sentiment"
+   ],
+   "hint": "情感价值几乎是唯一变量：留下真心喜欢的，其余转赠",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "kids": {
+   "label": "孩子的成长纪念物",
+   "scores": {
+    "usage": 0,
+    "future": 1,
+    "condition": 3,
+    "replace": 5,
+    "sentiment": 4,
+    "space": 3
+   },
+   "ask": [
+    "sentiment"
+   ],
+   "hint": "拍照或扫描后精简实体，留少量最有代表性的",
+   "flags": [],
+   "digitize": true,
+   "dependent": false
+  },
+  "keepsake": {
+   "label": "亲人的遗物",
+   "scores": {
+    "usage": 0,
+    "future": 1,
+    "condition": 3,
+    "replace": 5,
+    "sentiment": 5,
+    "space": 3
+   },
+   "ask": [],
+   "hint": "情感价值按 5 处理，结论不会是丢弃；建议封存或纪念化",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "device": {
+   "label": "旧手机 / 旧电脑",
+   "scores": {
+    "usage": 0,
+    "future": 1,
+    "condition": 3,
+    "replace": 3,
+    "sentiment": 1,
+    "space": 4
+   },
+   "ask": [
+    "condition",
+    "future"
+   ],
+   "hint": "先确认数据已备份并清除，再决定转卖或回收",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "furniture": {
+   "label": "家具 / 大件",
+   "scores": {
+    "usage": 3,
+    "future": 3,
+    "condition": 4,
+    "replace": 3,
+    "sentiment": 1,
+    "space": 0
+   },
+   "ask": [
+    "condition",
+    "usage"
+   ],
+   "hint": "空间占用权重最高，处理大件对居住体验改善最明显",
+   "flags": [],
+   "digitize": false,
+   "dependent": false
+  },
+  "document": {
+   "label": "证件 / 合同 / 产权文件",
+   "scores": {
+    "usage": 1,
+    "future": 4,
+    "condition": 4,
+    "replace": 5,
+    "sentiment": 1,
+    "space": 5
+   },
+   "ask": [],
+   "hint": "不可替代凭证，硬规则强制保留",
+   "flags": [
+    "document"
+   ],
+   "digitize": false,
+   "dependent": false
+  },
+  "expired": {
+   "label": "过期食品 / 药品 / 化妆品",
+   "scores": {
+    "usage": 0,
+    "future": 0,
+    "condition": 0,
+    "replace": 1,
+    "sentiment": 0,
+    "space": 5
+   },
+   "ask": [],
+   "hint": "硬规则立即处理，不参与评分",
+   "flags": [
+    "expired"
+   ],
+   "digitize": false,
+   "dependent": false
+  }
+ },
+ "economy": {
+  "tight": {
+   "label": "预算敏感",
+   "anchors": [
+    [
+     200,
+     4
+    ],
+    [
+     50,
+     3
+    ],
+    [
+     0,
+     2
+    ]
+   ],
+   "flow": "优先自己用掉或转卖换钱，别急着送人",
+   "preset": "space",
+   "hint": "价格阈值下调：两百块已属不小支出，替代难度偏高，结论更倾向保留"
+  },
+  "normal": {
+   "label": "常规",
+   "anchors": [
+    [
+     1000,
+     4
+    ],
+    [
+     200,
+     3
+    ],
+    [
+     0,
+     2
+    ]
+   ],
+   "flow": "先问亲友，无人要再挂二手，仍无人接手则回收",
+   "preset": "balanced",
+   "hint": "按常规价格敏感度判定：千元以上才算难再获得"
+  },
+  "comfortable": {
+   "label": "预算宽裕",
+   "anchors": [
+    [
+     5000,
+     4
+    ],
+    [
+     1000,
+     3
+    ],
+    [
+     0,
+     2
+    ]
+   ],
+   "flow": "直接送人或捐赠，不必为小钱花时间挂二手",
+   "preset": "balanced",
+   "hint": "价格阈值上移：多数物品都容易再买到，替代难度偏低；处置以省时间为主"
+  }
+ },
+ "flags": [
+  [
+   "safety",
+   "安全/卫生/法律风险（违禁、霉变、鼓包电池等）"
+  ],
+  [
+   "expired",
+   "已过期或变质（食品、药品、化妆品）"
+  ],
+  [
+   "irreparable",
+   "损坏且不可修复"
+  ],
+  [
+   "document",
+   "不可替代凭证（证件、合同、产权、保修凭证）"
+  ]
+ ],
+ "bias": [
+  {
+   "key": "endowment",
+   "name": "禀赋效应",
+   "when": [
+    {
+     "kind": "dim",
+     "dim": "replace",
+     "op": ">=",
+     "val": 3
+    },
+    {
+     "kind": "dim",
+     "dim": "usage",
+     "op": "<=",
+     "val": 1
+    }
+   ],
+   "text": "「值钱 / 难得」却一直没在用——一旦拥有就会高估价值（Kahneman-Knetsch-Thaler 的马克杯实验：卖价远高于买价）。替代难度只问「现在还能不能弄到」，不问「它值多少钱」。更深一层：在占有型导向里，物品被当成自我的一部分，放手才像割掉自己一块（弗洛姆《占有还是存在》）。"
+  },
+  {
+   "key": "sunk_cost",
+   "name": "沉没成本",
+   "when": [
+    {
+     "kind": "evidence",
+     "pattern": "花了|花掉|买成|买的|当年|当初|原价|专柜|海淘|打折|挺贵|很贵"
+    }
+   ],
+   "text": "提到的花销已经付出且收不回（Arkes & Blumer, 1985）。决策只看从今往后的得失：当初花了多少，不该影响现在要不要留。"
+  },
+  {
+   "key": "loss_aversion",
+   "name": "损失厌恶",
+   "when": [
+    {
+     "kind": "idx",
+     "op": ">=",
+     "val": 3
+    },
+    {
+     "kind": "dim",
+     "dim": "condition",
+     "op": ">=",
+     "val": 3
+    }
+   ],
+   "text": "东西还完好却要放手，反弹是正常的：失去的痛感约为等量得到的两倍（Kahneman & Tversky 前景理论）。这不是你犹豫不决，是大脑的默认机制——所以结论不改，只给一个出口：封存观察，到期再看。"
+  }
+ ],
+ "marks": "0 丢弃 ─ 25 流转 ─ 40 暂存 ─ 55 降级 ─ 70 保留 ─ 100"
+}
+/* RULES:END */
+</script>
+
+<script>
+const SCALE = 5;
+const RULES = JSON.parse(document.getElementById("rules-data").textContent);
+/* CONSTS:BEGIN */
+const DIMS = RULES.dimensions;
+const PRESETS = RULES.presets;
+const TIERS = RULES.tiers;
+const COLORS = RULES.colors;
+const CATEGORIES = RULES.categories;
+const ECONOMY = RULES.economy;
+const FLAGS = RULES.flags;
+const BIAS = RULES.bias;
+const MARKS = RULES.marks;
+function priceToReplace(price, econ){
+  const e = ECONOMY[econ] || ECONOMY.normal;
+  for(const [t,s] of e.anchors){ if(price>=t) return s; }
+  return 1;
+}
+/* CONSTS:END */
+
+let preset = "balanced";
+let weights = {...PRESETS.balanced.w};
+let custom = false;
+let draft = {scores:{}, evidence:{}, flags:[], category:""};
+let economy = "normal";
+let items = [];
+
+const $ = id => document.getElementById(id);
+
+// ---- 权重区 ----
+function renderPresets(){
+  $("presets").innerHTML = Object.entries(PRESETS).map(([k,v])=>
+    `<button data-p="${k}" class="${(!custom && k===preset)?"on":""}">${v.label}</button>`).join("")
+    + `<button data-p="custom" class="${custom?"on":""}">自定义</button>`;
+  $("presets").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const p = b.dataset.p;
+    if(p==="custom"){ custom = true; }
+    else { custom = false; preset = p; weights = {...PRESETS[p].w}; }
+    renderPresets(); renderSliders(); renderResults();
+  });
+}
+function renderSliders(){
+  $("sliders").innerHTML = DIMS.map(d=>
+    `<div class="row"><label class="fixed">${d.name}</label>
+     <input type="range" min="0" max="0.5" step="0.05" value="${weights[d.key].toFixed(2)}" data-k="${d.key}">
+     <span class="wval" id="w-${d.key}">${weights[d.key].toFixed(2)}</span></div>`).join("");
+  $("sliders").querySelectorAll("input").forEach(inp=>inp.oninput=()=>{
+    custom = true;
+    weights[inp.dataset.k] = parseFloat(inp.value);
+    $("w-"+inp.dataset.k).textContent = weights[inp.dataset.k].toFixed(2);
+    renderPresets(); renderResults();
+  });
+  const sum = Object.values(weights).reduce((a,b)=>a+b,0);
+  $("whint").textContent = `权重合计 ${sum.toFixed(2)}，计算时自动归一化为 1。`;
+}
+
+// ---- 录入区 ----
+function renderDims(){
+  $("dims").innerHTML = DIMS.map(d=>`
+    <div class="dim">
+      <div class="dimhead">${d.name}</div>
+      <div class="dimq">${d.q}</div>
+      <div class="opts">${d.opts.map((t,i)=>{
+        const v = 5-i;
+        return `<button class="opt ${draft.scores[d.key]===v?"on":""}" data-k="${d.key}" data-v="${v}"><b>${v}</b>${t}</button>`;
+      }).join("")}</div>
+      <input class="ev" type="text" placeholder="依据（可选）：一句可复述的事实" data-ev="${d.key}" value="${draft.evidence[d.key]||""}">
+    </div>`).join("");
+  $("dims").querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    draft.scores[b.dataset.k] = parseInt(b.dataset.v,10);
+    renderDims();
+  });
+  $("dims").querySelectorAll("[data-ev]").forEach(inp=>inp.oninput=()=>{
+    draft.evidence[inp.dataset.ev] = inp.value;
+  });
+}
+function renderFlags(){
+  $("flags").innerHTML = FLAGS.map(([k,t])=>
+    `<label><input type="checkbox" data-f="${k}" ${draft.flags.includes(k)?"checked":""}> ${t}</label>`).join("");
+  $("flags").querySelectorAll("input").forEach(c=>c.onchange=()=>{
+    draft.flags = [...$("flags").querySelectorAll("input:checked")].map(x=>x.dataset.f);
+  });
+}
+
+function renderEconomy(){
+  const sel = $("economy");
+  sel.innerHTML = Object.entries(ECONOMY).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join("");
+  sel.value = economy;
+  const show = () => {
+    const e = ECONOMY[economy];
+    $("ehint").textContent = e.hint + "｜处置偏好：" + e.flow;
+  };
+  sel.onchange = () => { economy = sel.value; show(); renderResults(); };
+  show();
+}
+
+function renderCategories(){
+  const sel = $("item-category");
+  sel.innerHTML = '<option value="">品类（可选，选了会自动填上可推断的分数）</option>' +
+    Object.entries(CATEGORIES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join("");
+  sel.onchange = () => {
+    draft.category = sel.value;
+    const cat = CATEGORIES[sel.value];
+    if(cat){
+      draft.scores = {...cat.scores};
+      draft.flags = [...(cat.flags||[])];
+      const ask = cat.ask.length ? "｜需你确认：" + cat.ask.map(k=>DIMS.find(d=>d.key===k).name).join("、") : "";
+      $("chint").textContent = cat.hint + ask;
+    }else{
+      draft.scores = {}; draft.flags = []; $("chint").textContent = "";
+    }
+    renderDims(); renderFlags();
+  };
+}
+
+// ---- 判定 ----
+function normWeights(){
+  const sum = Object.values(weights).reduce((a,b)=>a+b,0) || 1;
+  const out = {};
+  for(const k in weights) out[k] = weights[k]/sum;
+  return out;
+}
+function cmpN(a,op,b){
+  if(op===">=") return a>=b;
+  if(op==="<=") return a<=b;
+  if(op===">") return a>b;
+  if(op==="<") return a<b;
+  return a===b;
+}
+function biasHints(s, idx, ev){
+  const text = Object.values(ev||{}).join(" ");
+  return BIAS.filter(h=>h.when.every(c=>{
+    if(c.kind==="dim") return cmpN(s[c.dim]??0, c.op, c.val);
+    if(c.kind==="idx") return cmpN(idx, c.op, c.val);
+    if(c.kind==="evidence") return new RegExp(c.pattern).test(text);
+    return true;
+  })).map(h=>({name:h.name, text:h.text}));
+}
+function tierIndex(total){
+  for(let i=0;i<TIERS.length;i++) if(total>=TIERS[i][0]) return i;
+  return TIERS.length-1;
+}
+function hardRules(s, flags, idx){
+  const reasons = [];
+  if(flags.includes("safety")) return [4,"立即处理","按当地规定投放或专业回收","本周内单独分拣处理，不与生活垃圾混放",["存在安全/卫生/法律风险，强制处理，不参与评分"]];
+  if(flags.includes("expired")) return [4,"立即处理","丢弃或按品类回收","清理出有效期已过的全部同批物品",["已过期或变质，强制处理"]];
+  if(flags.includes("document")) return [0,"强制保留","归档固定位置并做备份","放入证件盒，扫描件存云端",["不可替代凭证，强制保留"]];
+  if(s.condition===0 || flags.includes("irreparable")){
+    if(s.sentiment>=4) return [3,"纪念化处理","拍照或留存部件后处理本体","先拍照/剪留一小块，再处理本体",["已不可修复；情感价值较高，先做纪念化留存"]];
+    return [4,"建议丢弃","不可修复件优先回收","查询可回收渠道，无法回收再丢弃",["功能状态为 0 或标记不可修复，直接建议处理"]];
+  }
+  if(s.replace<=1 && idx===3 && s.sentiment<=2){ idx=4; reasons.push("随手可得、没有转卖或转赠价值，直接回收处理，不必挂二手"); }
+  if(s.usage===5 && s.future>=4 && idx>0){ idx=0; reasons.push("每天都在用且未来确定需要，结论上调为保留"); }
+  if(s.sentiment===5 && idx>=4){ idx=2; reasons.push("情感价值为 5，不输出丢弃，结论上调为封存观察"); }
+  if(idx===4 && s.condition>=3 && s.replace>=2){ idx=3; reasons.push("还能用且送得出去（功能 ≥3、替代 ≥2），不做丢弃结论，先流转"); }
+  if(s.sentiment>=3 && idx===4){ idx=3; reasons.push("情感价值 ≥ 3（丢了会可惜），丢弃不可逆，改为先流转"); }
+  if(s.sentiment>=4 && idx>2){ idx=2; reasons.push("情感价值 ≥ 4：不丢弃也不转赠，改为封存观察"); }
+  if(s.future>=4 && idx>2){ idx=2; reasons.push("未来需求明确（≥4）：不能因为现在没用就处理，改为封存观察"); }
+  if(s.sentiment===0 && idx<3){ idx=3; reasons.push("情感价值为 0（看到就烦或负面记忆），结论不低于建议流转"); }
+  if(s.usage<=1 && s.future<=2 && idx<2){ idx=2; reasons.push("对现在的你已无用途（使用频率 ≤1 且未来需求 ≤2），结论不得高于暂存观察"); }
+  return [idx,null,null,null,reasons];
+}
+function assess(it){
+  const w = normWeights();
+  const cat = CATEGORIES[it.category] || {};
+  const cs = cat.scores || {};
+  const s = {};
+  DIMS.forEach(d=>{ s[d.key] = it.scores[d.key] ?? cs[d.key] ?? 0; });
+  const flags = [...(it.flags||[])];
+  (cat.flags||[]).forEach(f=>{ if(!flags.includes(f)) flags.push(f); });
+
+  const danshari = [];
+  if(s.usage<=1 && s.future===2 && s.sentiment<=2){
+    s.future = 1;
+    danshari.push("「万一以后用得上」按 1 分计：总有一天永远不会来");
+  }
+  const idle = s.usage<=1 && s.future<=2 && s.sentiment<=3;
+  if(idle){
+    danshari.push("闲置物品：功能状态与替代难度按半折计入——主轴是现在的你，不是物品还能用、值多少钱");
+  }
+
+  let total = 0;
+  const rows = DIMS.map(d=>{
+    const factor = (idle && (d.key==="condition" || d.key==="replace")) ? 0.5 : 1;
+    const p = w[d.key]*(s[d.key]/SCALE)*100*factor;
+    total += p;
+    return {key:d.key,name:d.name,weight:w[d.key],score:s[d.key],points:p,evidence:it.evidence?.[d.key]||""};
+  });
+  const [idx,vov,aov,nop,reasons0] = hardRules(s, flags, tierIndex(total));
+  const reasons = danshari.concat(reasons0);
+  const [lo,verdict,action,next0] = TIERS[idx];
+  const econ = ECONOMY[economy] || ECONOMY.normal;
+  const keep = "先问亲友或挂免费赠送，无人要再回收——完好的东西让它去被需要的地方";
+  let next = nop || (idx===3 ? econ.flow : (idx===4 && s.condition>=4 && s.sentiment<=2 ? keep : next0));
+  if(!nop && idx>=3 && cat.digitize){ next = "先拍照或扫描存档，再" + next; }
+  const bias = vov ? [] : biasHints(s, idx, it.evidence);
+  return {name:it.name,total,verdict:vov||verdict,action:aov||action,next,idx,rows,reasons,flags,bias,
+          hint:cat.hint||"", ask:cat.ask||[], catLabel:cat.label||"",
+          econLabel:econ.label, econHint:econ.hint};
+}
+
+// ---- 结果区 ----
+function renderResults(){
+  const rs = items.map(assess);
+  if(!rs.length){ $("results").innerHTML = '<p class="empty">还没有评估任何物品</p>'; $("priority").innerHTML=""; return; }
+  if(rs.length>1){
+    const order = [...rs].sort((a,b)=>a.total-b.total);
+    $("priority").innerHTML = `<div class="prio"><b>处理优先级</b>（分数越低越优先处理）<ol>${
+      order.map(r=>`<li>${esc(r.name)} — ${r.total.toFixed(1)} 分 → ${r.verdict} / ${r.action}</li>`).join("")
+    }</ol></div>`;
+  } else $("priority").innerHTML = "";
+
+  const cards = [...rs].sort((a,b)=>a.total-b.total).map(r=>`
+    <div class="card">
+      <header><h3>${esc(r.name)}</h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge" style="background:${COLORS[r.idx]}">${r.verdict}</span>
+          <button class="del" data-del="${esc(r.name)}">移除</button>
+        </div></header>
+      <div class="gauge"><span style="width:${r.total.toFixed(1)}%;background:${COLORS[r.idx]}"></span></div>
+      <div class="total"><b>${r.total.toFixed(1)}</b> / 100</div>
+      <p class="scale">${MARKS}</p>
+      <p class="action"><b>处置路径</b>：${r.action}<br><b>下一步</b>：${r.next}</p>
+      ${r.flags.length?`<p class="flagsline">标记：${r.flags.map(f=>FLAGS.find(x=>x[0]===f)[1]).join("、")}</p>`:""}
+      <div class="dbars">${r.rows.map(x=>`
+        <div class="dbar"><span>${x.name}</span>
+          <span class="t"><span style="width:${x.score/SCALE*100}%"></span></span>
+          <span class="m">${x.score}/5 · 权重 ${x.weight.toFixed(2)} · 贡献 ${x.points.toFixed(1)}</span></div>`).join("")}
+      </div>
+      ${r.hint?`<p class="flagsline">品类基线：${esc(r.catLabel)}　${esc(r.hint)}</p>`:""}
+      <p class="flagsline">经济档位：${esc(r.econLabel)}　${esc(r.econHint)}</p>
+      ${r.ask.length?`<p class="flagsline">需你确认：${esc(r.ask.map(k=>DIMS.find(d=>d.key===k).name).join("、"))}</p>`:""}
+      ${r.reasons.length?`<ul class="reasons">${r.reasons.map(t=>`<li>${t}</li>`).join("")}</ul>`:""}
+      ${r.bias.length?`<ul class="bias">${r.bias.map(b=>`<li><b>${esc(b.name)}</b>：${esc(b.text)}</li>`).join("")}</ul>`:""}
+    </div>`).join("");
+  $("results").innerHTML = cards;
+  $("results").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    items = items.filter(i=>i.name!==b.dataset.del);
+    renderResults();
+  });
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// ---- 交互 ----
+$("add").onclick = () => {
+  const name = $("item-name").value.trim() || `物品 ${items.length+1}`;
+  if(Object.keys(draft.scores).length < DIMS.length){
+    alert("请为六个维度各选一个分数"); return;
+  }
+  items.push({name, category:draft.category||"", scores:{...draft.scores}, evidence:{...draft.evidence}, flags:[...draft.flags]});
+  draft = {scores:{}, evidence:{}, flags:[], category:""};
+  $("item-name").value = "";
+  $("item-category").value = "";
+  $("chint").textContent = "";
+  renderDims(); renderFlags(); renderResults();
+};
+$("reset").onclick = () => { draft = {scores:{},evidence:{},flags:[],category:""}; $("item-name").value=""; $("item-category").value=""; $("chint").textContent=""; renderDims(); renderFlags(); };
+$("clear").onclick = () => { items=[]; renderResults(); };
+$("export").onclick = () => {
+  const blob = new Blob([JSON.stringify({items},null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "items.json"; a.click();
+};
+$("copy").onclick = () => {
+  const lines = items.map(assess).sort((a,b)=>a.total-b.total)
+    .map(r=>`${r.name}：${r.total.toFixed(1)}/100 → ${r.verdict}（${r.action}）｜下一步：${r.next}`);
+  navigator.clipboard.writeText(lines.join("\n")).then(()=>alert("已复制结果文本"));
+};
+
+renderPresets(); renderSliders(); renderEconomy(); renderCategories(); renderDims(); renderFlags(); renderResults();
+</script>
+</body>
+</html>

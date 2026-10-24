@@ -1,0 +1,198 @@
+{
+  "_doc": "标定样例：expect 为人工判断的应有结论。运行 python scripts/calibrate.py 检查系统是否与之相符；不符时先判断是样例期望写错，还是规则/阈值需要调整。",
+  "samples": [
+    {
+      "name": "每天用的电水壶",
+      "scores": {"usage": 5, "future": 5, "condition": 4, "replace": 1, "sentiment": 1, "space": 3},
+      "expect": "保留",
+      "why": "每天都在用，未来确定会用"
+    },
+    {
+      "name": "原装手机盒",
+      "category": "phone_box",
+      "expect": "建议丢弃",
+      "why": "包装盒没有使用场景，留着只占地方"
+    },
+    {
+      "name": "过期感冒药",
+      "category": "expired",
+      "expect": "立即处理",
+      "why": "过期药品，安全风险"
+    },
+    {
+      "name": "鼓包的充电宝",
+      "scores": {"usage": 0, "future": 0, "condition": 2, "replace": 2, "sentiment": 1, "space": 4},
+      "flags": ["safety"],
+      "expect": "立即处理",
+      "why": "电池鼓包属于安全隐患"
+    },
+    {
+      "name": "房产证",
+      "category": "document",
+      "expect": "强制保留",
+      "why": "不可替代凭证"
+    },
+    {
+      "name": "奶奶织的毛线衣",
+      "scores": {"usage": 0, "future": 1, "condition": 3, "replace": 5, "sentiment": 5, "space": 4},
+      "expect": "暂存观察",
+      "why": "情感无可替代，不能判丢，但也不必天天占着衣柜"
+    },
+    {
+      "name": "三年没用的登山杖",
+      "scores": {"usage": 1, "future": 2, "condition": 4, "replace": 3, "sentiment": 2, "space": 3},
+      "expect": "建议流转",
+      "why": "不再爬山，完好且有人要，转卖比堆着好"
+    },
+    {
+      "name": "三年没用的登山杖（摇摆 1 次）",
+      "scores": {"usage": 1, "future": 2, "condition": 4, "replace": 3, "sentiment": 2, "space": 3},
+      "swings": 1,
+      "expect": "暂存观察",
+      "why": "后悔管理：第 1 次摇摆只给封存出口，不回到保留，也不维持流转"
+    },
+    {
+      "name": "三年没用的登山杖（摇摆 2 次）",
+      "scores": {"usage": 1, "future": 2, "condition": 4, "replace": 3, "sentiment": 2, "space": 3},
+      "swings": 2,
+      "expect": "暂存观察",
+      "why": "第 2 次起锁定：结论停在封存，只执行动作，不再重算"
+    },
+    {
+      "name": "当年八千买的单反",
+      "scores": {"usage": 2, "future": 3, "condition": 4, "replace": 4, "sentiment": 2, "space": 3},
+      "wtp": 100,
+      "expect": "暂存观察",
+      "expect_by_economy": {"tight": "保留（观察）"},
+      "why": "WTP 检验：今天只愿意花一百再买一台，说明它已不是你要的相机，替代难度按 2 计，降级为暂存（预算敏感档下这一百块记 3 分，仍是保留（观察）——金额的意义随档位变化，正是经济校准在起作用）"
+    },
+    {
+      "name": "一年级的课本",
+      "category": "book",
+      "expect": "建议流转",
+      "why": "微乎其微的情感，家长说的以后有用不算需求"
+    },
+    {
+      "name": "电器保修卡",
+      "category": "manual",
+      "expect": "建议丢弃",
+      "expect_by_preset": {"space": "暂存观察"},
+      "why": "可拍照存档，实体留存无意义"
+    },
+    {
+      "name": "修不好的台灯",
+      "scores": {"usage": 1, "future": 1, "condition": 0, "replace": 2, "sentiment": 1, "space": 2},
+      "expect": "建议丢弃",
+      "why": "已损坏不可修复"
+    },
+    {
+      "name": "妈妈织的围巾（冬天在戴）",
+      "scores": {"usage": 4, "future": 4, "condition": 4, "replace": 5, "sentiment": 5, "space": 4},
+      "expect": "保留",
+      "why": "在用且有情感，双重高分"
+    },
+    {
+      "name": "前任送的摆件（看到就烦）",
+      "scores": {"usage": 0, "future": 1, "condition": 4, "replace": 3, "sentiment": 0, "space": 3},
+      "expect": "建议流转",
+      "why": "看到就烦不该留，但完好可转赠，不必扔"
+    },
+    {
+      "name": "天天戴的结婚戒指",
+      "scores": {"usage": 5, "future": 5, "condition": 5, "replace": 5, "sentiment": 5, "space": 5},
+      "expect": "保留",
+      "why": "六维满分"
+    },
+    {
+      "name": "旧手机（数据已备份）",
+      "category": "device",
+      "expect": "建议流转",
+      "why": "还能用且有残值，转卖或回收，不该进垃圾桶"
+    },
+    {
+      "name": "旧手机的贴膜神器",
+      "scores": {"usage": 2, "future": 3, "condition": 4, "replace": 2, "sentiment": 1, "space": 5},
+      "depends_on": "旧手机（数据已备份）",
+      "expect": "建议流转",
+      "why": "附属件：手机都处理了，贴膜神器失去服务对象，价值随主件清零（不单独按小件不占地方留着）"
+    },
+    {
+      "name": "旧手机的纪念手机壳",
+      "scores": {"usage": 2, "future": 3, "condition": 4, "replace": 2, "sentiment": 4, "space": 5},
+      "depends_on": "旧手机（数据已备份）",
+      "expect": "暂存观察",
+      "why": "同样是附属件，但情感 ≥4：不强制流转，改为封存观察"
+    },
+    {
+      "name": "一箱旧数据线",
+      "category": "cable",
+      "expect": "建议丢弃",
+      "expect_by_preset": {"space": "暂存观察"},
+      "why": "留几根常用的，其余不值钱也没人要，回收处理"
+    },
+    {
+      "name": "正穿着的冬季大衣",
+      "scores": {"usage": 4, "future": 4, "condition": 4, "replace": 2, "sentiment": 2, "space": 2},
+      "expect": "保留（观察）",
+      "why": "季节性在用，但体积不小，降级存放即可"
+    },
+    {
+      "name": "不合身的贵价西装",
+      "scores": {"usage": 0, "future": 1, "condition": 5, "replace": 4, "sentiment": 2, "space": 3},
+      "expect": "建议流转",
+      "why": "再新再贵，不合身就不会穿——主轴是人不是衣服"
+    },
+    {
+      "name": "孩子的幼儿园手工",
+      "category": "kids",
+      "expect": "暂存观察",
+      "why": "有情感价值，拍照后可精简，先封存"
+    },
+    {
+      "name": "囤的一大包塑料袋",
+      "category": "packaging",
+      "expect": "暂存观察",
+      "expect_by_preset": {"space": "保留（观察）"},
+      "why": "还会用到但严重过量，留常用的一部分"
+    },
+    {
+      "name": "老照片（已扫描）",
+      "scores": {"usage": 0, "future": 1, "condition": 4, "replace": 5, "sentiment": 4, "space": 5},
+      "expect": "暂存观察",
+      "why": "情感不低且不可再获得，先封存而非流转"
+    },
+    {
+      "name": "一整柜没读的书",
+      "category": "book",
+      "scores": {"space": 1},
+      "expect": "建议流转",
+      "why": "占满一柜且无阅读计划，转赠或捐赠"
+    },
+    {
+      "name": "婴儿床（计划二胎）",
+      "scores": {"usage": 0, "future": 4, "condition": 4, "replace": 3, "sentiment": 2, "space": 0},
+      "expect": "暂存观察",
+      "why": "未来需求明确，不能因为现在没用就误判"
+    },
+    {
+      "name": "第三把重复的削皮器",
+      "category": "kitchenware",
+      "scores": {"usage": 1, "future": 2, "condition": 4, "replace": 0, "sentiment": 1, "space": 2},
+      "expect": "建议丢弃",
+      "why": "家里已有多个，同用途只留一件"
+    },
+    {
+      "name": "亡父的手表",
+      "category": "keepsake",
+      "expect": "暂存观察",
+      "why": "遗物，情感满分，封存或纪念化"
+    },
+    {
+      "name": "每天用的炒锅",
+      "category": "kitchenware",
+      "scores": {"usage": 5, "future": 5, "condition": 4},
+      "expect": "保留",
+      "why": "每天都在用"
+    }
+  ]
+}

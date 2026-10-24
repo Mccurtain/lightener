@@ -1,0 +1,595 @@
+{
+  "scale": 5,
+  "dimensions": [
+    {
+      "key": "usage",
+      "name": "使用频率",
+      "q": "上一次真正用到它，是什么时候？",
+      "opts": [
+        "最近一两周还在用",
+        "最近几个月用过",
+        "大概一年前",
+        "去年或更早，一年里偶尔用",
+        "想不起来上次是什么时候",
+        "买来就没怎么用过 / 从没用过"
+      ]
+    },
+    {
+      "key": "future",
+      "name": "未来需求",
+      "q": "接下来一年，有没有具体哪件事会用到它？",
+      "opts": [
+        "已经定好了，肯定会用",
+        "有固定的时候（换季、过年、每年一次）",
+        "能想到具体场景，但不确定",
+        "说不准，就是觉得万一用得上",
+        "想不出什么事",
+        "情况变了，肯定用不上了"
+      ]
+    },
+    {
+      "key": "condition",
+      "name": "功能状态",
+      "q": "现在还能用吗？",
+      "opts": [
+        "能，跟新的差不多",
+        "能用，有正常使用痕迹",
+        "能用，但得修一下或换配件",
+        "得大修才行",
+        "勉强能用，快不行了",
+        "用不了了：坏了 / 过期 / 变质"
+      ]
+    },
+    {
+      "key": "replace",
+      "name": "替代难度",
+      "q": "如果现在需要，还能再弄到一个吗？",
+      "opts": [
+        "弄不到了：绝版、独一无二、别人手工做的",
+        "能，但很贵，或者得费劲找",
+        "得专门跑一趟或下单等几天",
+        "网上随手就能买，也不贵",
+        "随处都有，很便宜",
+        "家里还有好几个"
+      ]
+    },
+    {
+      "key": "sentiment",
+      "name": "情感价值",
+      "q": "它是从哪来的？",
+      "opts": [
+        "重要的人给的或留下的",
+        "某次特别的经历带回来的",
+        "自己买的，用了很久有点感情",
+        "有点喜欢，没什么特别来历",
+        "随手买的 / 别人给的，无感",
+        "看到就烦，或连着不愉快的事"
+      ]
+    },
+    {
+      "key": "space",
+      "name": "空间友好度",
+      "q": "它现在放在哪儿，占多大地方？",
+      "opts": [
+        "随手就能拿到，几乎不占地方",
+        "收在一个小格子里",
+        "占一格层板或一个抽屉",
+        "占半个柜子",
+        "算大件，占一整柜",
+        "专门腾了地方：一个角落 / 一间房"
+      ]
+    }
+  ],
+  "presets": {
+    "balanced": {
+      "label": "均衡（默认）",
+      "w": {
+        "usage": 0.25,
+        "future": 0.2,
+        "condition": 0.15,
+        "replace": 0.15,
+        "sentiment": 0.15,
+        "space": 0.1
+      }
+    },
+    "minimalist": {
+      "label": "极简主义",
+      "w": {
+        "usage": 0.35,
+        "future": 0.25,
+        "condition": 0.1,
+        "replace": 0.1,
+        "sentiment": 0.1,
+        "space": 0.1
+      }
+    },
+    "sentimental": {
+      "label": "念旧宽容",
+      "w": {
+        "usage": 0.2,
+        "future": 0.15,
+        "condition": 0.15,
+        "replace": 0.1,
+        "sentiment": 0.3,
+        "space": 0.1
+      }
+    },
+    "space": {
+      "label": "空间优先",
+      "w": {
+        "usage": 0.25,
+        "future": 0.2,
+        "condition": 0.1,
+        "replace": 0.1,
+        "sentiment": 0.05,
+        "space": 0.3
+      }
+    }
+  },
+  "tiers": [
+    [
+      70,
+      "保留",
+      "继续使用",
+      "放回原位，保持随时可取"
+    ],
+    [
+      55,
+      "保留（观察）",
+      "降级存放",
+      "移出黄金位，6 个月后复评"
+    ],
+    [
+      40,
+      "暂存观察",
+      "封存",
+      "装箱标记日期，3-6 个月到期未取用即处理"
+    ],
+    [
+      25,
+      "建议流转",
+      "转赠 / 转卖 / 捐赠",
+      "一周内挂二手或问亲友，无人接手则回收"
+    ],
+    [
+      0,
+      "建议丢弃",
+      "丢弃 / 回收",
+      "按当地规则分类投放或预约回收"
+    ]
+  ],
+  "colors": [
+    "#16a34a",
+    "#65a30d",
+    "#ca8a04",
+    "#ea580c",
+    "#dc2626"
+  ],
+  "categories": {
+    "phone_box": {
+      "label": "手机 / 数码包装盒",
+      "scores": {
+        "usage": 0,
+        "future": 1,
+        "condition": 4,
+        "replace": 1,
+        "sentiment": 1,
+        "space": 4
+      },
+      "ask": [
+        "future",
+        "sentiment"
+      ],
+      "hint": "留着通常只为保修、退换或转卖；没有这些用途就不必留",
+      "flags": [],
+      "digitize": false,
+      "dependent": true
+    },
+    "cable": {
+      "label": "线材 / 充电线 / 小配件",
+      "scores": {
+        "usage": 1,
+        "future": 2,
+        "condition": 3,
+        "replace": 1,
+        "sentiment": 1,
+        "space": 5
+      },
+      "ask": [
+        "usage",
+        "condition"
+      ],
+      "hint": "最容易囤积的品类：只留当前设备正在用的，其余处理",
+      "flags": [],
+      "digitize": false,
+      "dependent": true
+    },
+    "clothing": {
+      "label": "一年以上没穿的衣服",
+      "scores": {
+        "usage": 1,
+        "future": 2,
+        "condition": 4,
+        "replace": 2,
+        "sentiment": 2,
+        "space": 3
+      },
+      "ask": [
+        "sentiment",
+        "condition"
+      ],
+      "hint": "合身与否和情感是主要变量，其余维度可沿用基线",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "book": {
+      "label": "未读 / 已读完的书",
+      "scores": {
+        "usage": 1,
+        "future": 2,
+        "condition": 4,
+        "replace": 2,
+        "sentiment": 2,
+        "space": 3
+      },
+      "ask": [
+        "sentiment",
+        "future"
+      ],
+      "hint": "可转赠或数字化；成套书、签名本另按情感价值加分",
+      "flags": [],
+      "digitize": true,
+      "dependent": false
+    },
+    "manual": {
+      "label": "说明书 / 保修卡 / 票据",
+      "scores": {
+        "usage": 0,
+        "future": 1,
+        "condition": 4,
+        "replace": 1,
+        "sentiment": 1,
+        "space": 5
+      },
+      "ask": [
+        "future"
+      ],
+      "hint": "多数可拍照存档；跟着物件走更有用，单独留存意义不大",
+      "flags": [],
+      "digitize": true,
+      "dependent": true
+    },
+    "packaging": {
+      "label": "包装袋 / 纸箱 / 礼品袋",
+      "scores": {
+        "usage": 2,
+        "future": 3,
+        "condition": 4,
+        "replace": 0,
+        "sentiment": 1,
+        "space": 4
+      },
+      "ask": [
+        "usage"
+      ],
+      "hint": "留少量常用尺寸备用即可，其余压扁回收",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "kitchenware": {
+      "label": "厨具 / 餐具",
+      "scores": {
+        "usage": 3,
+        "future": 4,
+        "condition": 4,
+        "replace": 2,
+        "sentiment": 1,
+        "space": 2
+      },
+      "ask": [
+        "usage"
+      ],
+      "hint": "功能重复的是处理重点，同用途留一件最好用的",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "appliance": {
+      "label": "小家电",
+      "scores": {
+        "usage": 2,
+        "future": 3,
+        "condition": 4,
+        "replace": 2,
+        "sentiment": 1,
+        "space": 2
+      },
+      "ask": [
+        "usage",
+        "condition"
+      ],
+      "hint": "一年没通电、又没有季节用途的，多半不再需要",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "hobby": {
+      "label": "兴趣装备（运动 / 乐器 / 摄影）",
+      "scores": {
+        "usage": 1,
+        "future": 2,
+        "condition": 4,
+        "replace": 3,
+        "sentiment": 2,
+        "space": 2
+      },
+      "ask": [
+        "usage",
+        "future"
+      ],
+      "hint": "关键看这个兴趣还在不在；装备通常还有残值，可转卖",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "gift": {
+      "label": "别人送的摆件 / 礼品",
+      "scores": {
+        "usage": 0,
+        "future": 1,
+        "condition": 4,
+        "replace": 3,
+        "sentiment": 3,
+        "space": 3
+      },
+      "ask": [
+        "sentiment"
+      ],
+      "hint": "情感价值几乎是唯一变量：留下真心喜欢的，其余转赠",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "kids": {
+      "label": "孩子的成长纪念物",
+      "scores": {
+        "usage": 0,
+        "future": 1,
+        "condition": 3,
+        "replace": 5,
+        "sentiment": 4,
+        "space": 3
+      },
+      "ask": [
+        "sentiment"
+      ],
+      "hint": "拍照或扫描后精简实体，留少量最有代表性的",
+      "flags": [],
+      "digitize": true,
+      "dependent": false
+    },
+    "keepsake": {
+      "label": "亲人的遗物",
+      "scores": {
+        "usage": 0,
+        "future": 1,
+        "condition": 3,
+        "replace": 5,
+        "sentiment": 5,
+        "space": 3
+      },
+      "ask": [],
+      "hint": "情感价值按 5 处理，结论不会是丢弃；建议封存或纪念化",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "device": {
+      "label": "旧手机 / 旧电脑",
+      "scores": {
+        "usage": 0,
+        "future": 1,
+        "condition": 3,
+        "replace": 3,
+        "sentiment": 1,
+        "space": 4
+      },
+      "ask": [
+        "condition",
+        "future"
+      ],
+      "hint": "先确认数据已备份并清除，再决定转卖或回收",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "furniture": {
+      "label": "家具 / 大件",
+      "scores": {
+        "usage": 3,
+        "future": 3,
+        "condition": 4,
+        "replace": 3,
+        "sentiment": 1,
+        "space": 0
+      },
+      "ask": [
+        "condition",
+        "usage"
+      ],
+      "hint": "空间占用权重最高，处理大件对居住体验改善最明显",
+      "flags": [],
+      "digitize": false,
+      "dependent": false
+    },
+    "document": {
+      "label": "证件 / 合同 / 产权文件",
+      "scores": {
+        "usage": 1,
+        "future": 4,
+        "condition": 4,
+        "replace": 5,
+        "sentiment": 1,
+        "space": 5
+      },
+      "ask": [],
+      "hint": "不可替代凭证，硬规则强制保留",
+      "flags": [
+        "document"
+      ],
+      "digitize": false,
+      "dependent": false
+    },
+    "expired": {
+      "label": "过期食品 / 药品 / 化妆品",
+      "scores": {
+        "usage": 0,
+        "future": 0,
+        "condition": 0,
+        "replace": 1,
+        "sentiment": 0,
+        "space": 5
+      },
+      "ask": [],
+      "hint": "硬规则立即处理，不参与评分",
+      "flags": [
+        "expired"
+      ],
+      "digitize": false,
+      "dependent": false
+    }
+  },
+  "economy": {
+    "tight": {
+      "label": "预算敏感",
+      "anchors": [
+        [
+          200,
+          4
+        ],
+        [
+          50,
+          3
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "flow": "优先自己用掉或转卖换钱，别急着送人",
+      "preset": "space",
+      "hint": "价格阈值下调：两百块已属不小支出，替代难度偏高，结论更倾向保留"
+    },
+    "normal": {
+      "label": "常规",
+      "anchors": [
+        [
+          1000,
+          4
+        ],
+        [
+          200,
+          3
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "flow": "先问亲友，无人要再挂二手，仍无人接手则回收",
+      "preset": "balanced",
+      "hint": "按常规价格敏感度判定：千元以上才算难再获得"
+    },
+    "comfortable": {
+      "label": "预算宽裕",
+      "anchors": [
+        [
+          5000,
+          4
+        ],
+        [
+          1000,
+          3
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "flow": "直接送人或捐赠，不必为小钱花时间挂二手",
+      "preset": "balanced",
+      "hint": "价格阈值上移：多数物品都容易再买到，替代难度偏低；处置以省时间为主"
+    }
+  },
+  "flags": [
+    [
+      "safety",
+      "安全/卫生/法律风险（违禁、霉变、鼓包电池等）"
+    ],
+    [
+      "expired",
+      "已过期或变质（食品、药品、化妆品）"
+    ],
+    [
+      "irreparable",
+      "损坏且不可修复"
+    ],
+    [
+      "document",
+      "不可替代凭证（证件、合同、产权、保修凭证）"
+    ]
+  ],
+  "bias": [
+    {
+      "key": "endowment",
+      "name": "禀赋效应",
+      "when": [
+        {
+          "kind": "dim",
+          "dim": "replace",
+          "op": ">=",
+          "val": 3
+        },
+        {
+          "kind": "dim",
+          "dim": "usage",
+          "op": "<=",
+          "val": 1
+        }
+      ],
+      "text": "「值钱 / 难得」却一直没在用——一旦拥有就会高估价值（Kahneman-Knetsch-Thaler 的马克杯实验：卖价远高于买价）。替代难度只问「现在还能不能弄到」，不问「它值多少钱」。更深一层：在占有型导向里，物品被当成自我的一部分，放手才像割掉自己一块（弗洛姆《占有还是存在》）。"
+    },
+    {
+      "key": "sunk_cost",
+      "name": "沉没成本",
+      "when": [
+        {
+          "kind": "evidence",
+          "pattern": "花了|花掉|买成|买的|当年|当初|原价|专柜|海淘|打折|挺贵|很贵"
+        }
+      ],
+      "text": "提到的花销已经付出且收不回（Arkes & Blumer, 1985）。决策只看从今往后的得失：当初花了多少，不该影响现在要不要留。"
+    },
+    {
+      "key": "loss_aversion",
+      "name": "损失厌恶",
+      "when": [
+        {
+          "kind": "idx",
+          "op": ">=",
+          "val": 3
+        },
+        {
+          "kind": "dim",
+          "dim": "condition",
+          "op": ">=",
+          "val": 3
+        }
+      ],
+      "text": "东西还完好却要放手，反弹是正常的：失去的痛感约为等量得到的两倍（Kahneman & Tversky 前景理论）。这不是你犹豫不决，是大脑的默认机制——所以结论不改，只给一个出口：封存观察，到期再看。"
+    }
+  ],
+  "marks": "0 丢弃 ─ 25 流转 ─ 40 暂存 ─ 55 降级 ─ 70 保留 ─ 100"
+}
