@@ -1,0 +1,56 @@
+name: 规则建议
+description: 新品类、新硬规则、权重调整、文档改进
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        改规则的建议请尽量给出「期望结论」和「理由」，最好能附一条标定样例。
+        标定样例格式见 `scripts/calibration_samples.json`。
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 建议类型
+      options:
+        - 新品类基线
+        - 新硬规则 / 调整现有硬规则
+        - 权重或阈值调整
+        - 文档改进
+        - 脚本 / 工具改进
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 现状有什么问题
+      description: 举一个具体场景，说明现在的规则会给出什么结论
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的结论与理由
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: 标定样例（可选）
+      description: 按 calibration_samples.json 的格式给出 name / scores / expect / why
+      render: json
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 确认
+      options:
+        - label: 我已跑过 `python scripts/calibrate.py`，当前为 30/30
+          required: false
+        - label: 我愿意直接提 PR 实现（见 CONTRIBUTING.md）
+          required: false

@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check SKILL.md frontmatter
+        run: |
+          python - <<'PY'
+          import re, sys, pathlib
+
+          text = pathlib.Path("SKILL.md").read_text(encoding="utf-8")
+          m = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
+          if not m:
+              sys.exit("SKILL.md 缺少 YAML frontmatter")
+          fm = m.group(1)
+          for field in ("name:", "description:"):
+              if field not in fm:
+                  sys.exit("frontmatter 缺少 " + field)
+          name = re.search(r"name:\s*(.+)", fm).group(1).strip()
+          if not re.fullmatch(r"[a-z0-9-]+", name):
+              sys.exit("name 必须是 kebab-case：" + name)
+          print("frontmatter OK")
+          PY
+
+      - name: Compile scripts
+        run: python -m compileall -q scripts
+
+      - name: Check rules sync
+        run: python scripts/build_form.py --check
+
+      - name: Calibration regression
+        run: python scripts/calibrate.py

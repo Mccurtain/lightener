@@ -150,13 +150,16 @@ lightener/
 
 日常使用只需 `assess_item.py`；`references/` 里的内容由技能按需加载，不必预先通读。
 
-## 维护者
+## 贡献
 
-改动任何规则、阈值或品类基线后，按此顺序执行：
+PR 一律提到 `pending` 分支（不要提 `main`），由维护者审核后 squash 合并。完整流程、本地校验命令、标定样例格式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+提 PR 前请跑通：
 
 ```bash
-python scripts/build_form.py     # 重新生成 assets/rules.json 并同步表单
-python scripts/calibrate.py      # 跑 30 条样例回归（不符退出码 1）
+python scripts/build_form.py --check   
+python scripts/calibrate.py           
+python -m compileall scripts
 ```
 
 标定细节见 `references/calibration.md`，进阶用法与打包见 `references/advanced.md`。

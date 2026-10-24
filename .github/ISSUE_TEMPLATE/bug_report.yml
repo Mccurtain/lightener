@@ -1,0 +1,60 @@
+name: 问题反馈
+description: 结论不合理、脚本报错、文档与实现不一致
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请先跑 `python scripts/calibrate.py`，确认不是规则本身被改坏。
+        能跑通但结论不合理，说明是规则问题，欢迎直接提 PR（见 CONTRIBUTING.md）。
+
+  - type: input
+    id: item
+    attributes:
+      label: 涉及的物品 / 品类
+      description: 例如：旧手机包装盒（phone_box）
+    validations:
+      required: true
+
+  - type: dropdown
+    id: preset
+    attributes:
+      label: 权重方案
+      options:
+        - balanced
+        - minimalist
+        - sentimental
+        - space
+    validations:
+      required: true
+
+  - type: textarea
+    id: input
+    attributes:
+      label: 输入 JSON / 命令
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际输出（总分 / 结论 / 报告片段）
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你期望的结论与理由
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 提交版本 / 分支
+      placeholder: main @ 1b64feb
+    validations:
+      required: false
