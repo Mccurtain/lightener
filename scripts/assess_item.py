@@ -529,21 +529,76 @@ ITEM_KEYS = {
 }
 
 
+def _label(item):
+    return item.get("name") if isinstance(item.get("name"), str) and item.get("name") else "未命名物品"
+
+
 def validate_item(item):
-    """防止分数被写在顶层而静默回退——这类错误必须报错，不能悄悄算出错结论。"""
+    """防止分数被写在顶层而静默回退——这类错误必须报错，不能悄悄算出错结论。
+
+    同时把「类型写错」这类常见手误变成带正确写法的一行错误，而不是 traceback。
+    """
     if not isinstance(item, dict):
-        raise ValueError("每个物品必须是 JSON 对象")
-    name = item.get("name") or "未命名物品"
+        raise ValueError('每个物品必须是 JSON 对象，例如 {"name":"旧登山杖","scores":{"usage":1}}')
+    label = _label(item)
+
+    if item.get("name") is not None and not isinstance(item["name"], str):
+        raise ValueError(f"「{label}」的 name 必须是字符串，收到 {type(item['name']).__name__}")
 
     misplaced = [k for k in item if k in DIM_KEYS]
     if misplaced:
         example = ", ".join(f'"{k}":3' for k in misplaced[:3])
         raise ValueError(
-            f"「{name}」的分数写在了顶层（{'、'.join(misplaced)}）。"
-            f'分数必须放进 scores 字段：{{"name":"{name}","scores":{{{example}}}}}'
+            f"「{label}」的分数写在了顶层（{'、'.join(misplaced)}）。"
+            f'分数必须放进 scores 字段：{{"name":"{label}","scores":{{{example}}}}}'
         )
 
+    scores = item.get("scores")
+    if scores is not None and not isinstance(scores, dict):
+        raise ValueError(
+            f"「{label}」的 scores 必须是对象，如 {{\"usage\":1,\"future\":2}}，"
+            f"收到 {type(scores).__name__}"
+        )
+
+    evidence = item.get("evidence")
+    if evidence is not None and not isinstance(evidence, dict):
+        raise ValueError(f"「{label}」的 evidence 必须是对象（维度 key → 依据文字），如 {{\"usage\":\"去年夏天用过\"}}")
+
+    flags = item.get("flags")
+    if flags is not None and not isinstance(flags, list):
+        raise ValueError(f"「{label}」的 flags 必须是数组，如 [\"expired\"]")
+
+    owner = item.get("owner")
+    if owner is not None and not isinstance(owner, str):
+        raise ValueError(f"「{label}」的 owner 必须是字符串（伴侣 / 孩子 / 父母 / 室友）")
+
+    swings = item.get("swings")
+    if swings is not None and (isinstance(swings, bool) or not isinstance(swings, (int, float))):
+        raise ValueError(f"「{label}」的 swings 必须是数字（摇摆次数：1 给封存出口，2 及以上锁定）")
+    if isinstance(swings, (int, float)) and swings < 0:
+        raise ValueError(f"「{label}」的 swings 不能为负")
+
     return [k for k in item if k not in ITEM_KEYS]
+
+
+def soft_notes(item):
+    """不致命但要提醒的问题：标记写错、字段拼错——静默丢弃会让用户以为设置生效了。"""
+    notes = []
+    label = _label(item) if isinstance(item, dict) else "未命名物品"
+
+    flags = item.get("flags")
+    if isinstance(flags, list):
+        unknown_flags = [str(f) for f in flags if f not in FLAG_LABELS]
+        if unknown_flags:
+            notes.append(
+                f"{label}：flags 里的 {'、'.join(unknown_flags)} 不是已知标记，已忽略"
+                f"（可选：{'、'.join(FLAG_LABELS)}）"
+            )
+
+    unknown_keys = [k for k in item if k not in ITEM_KEYS and k not in DIM_KEYS]
+    if unknown_keys:
+        notes.append(f"{label}：字段 {'、'.join(unknown_keys)} 未被识别，已忽略")
+    return notes
 
 
 def assess(
@@ -555,7 +610,7 @@ def assess(
     host_disposed=False,
     host_name="",
 ):
-    unknown = validate_item(item)
+    validate_item(item)
     name = item.get("name") or "未命名物品"
     raw_scores = item.get("scores") or {}
 
@@ -662,6 +717,7 @@ def assess(
     }
     base = engine.evaluate(payload, {"excellent": 70, "good": 55, "pass": 40})
     warnings = [w for w in base["warnings"] if "缺少证据" not in w]
+    warnings.extend(soft_notes(item))
 
     for key in DIM_KEYS:
         if sources[key] == "default":
@@ -675,8 +731,6 @@ def assess(
         elif not (evidence.get(key) or "").strip() and sources[key] != "wtp":
             warnings.append(f"{name}：维度 {DIM_NAMES[key]} 缺少证据")
 
-    if unknown:
-        warnings.append(f"{name}：字段 {'、'.join(unknown)} 未被识别，已忽略（分数要放在 scores 里）")
     if not raw_scores and not prior:
         warnings.append(
             f"{name}：既没有 scores 也没有 category，六维全部按默认 0 处理，结论不可靠——"
@@ -1199,15 +1253,49 @@ def add_months(day, months):
     return date(year, month, min(day.day, calendar.monthrange(year, month)[1]))
 
 
+def write_json(path, payload, label):
+    """统一写出 JSON：目录不存在就建，写不出去给一行可操作错误。"""
+    target = Path(path)
+    try:
+        if target.parent and not target.parent.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        raise ValueError(f"{label}写入失败 {path}：{e}")
+    return target
+
+
+def write_text(path, text, label):
+    target = Path(path)
+    try:
+        if target.parent and not target.parent.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+    except OSError as e:
+        raise ValueError(f"{label}写入失败 {path}：{e}")
+    return target
+
+
+def read_json_or_none(path, label):
+    """读档案类 JSON：不存在返回 None，损坏则报一行可操作错误（不静默当成空）。"""
+    log_path = Path(path)
+    if not log_path.exists():
+        return None
+    try:
+        return json.loads(log_path.read_text(encoding="utf-8-sig"))
+    except UnicodeDecodeError:
+        raise ValueError(f"{label}{path} 不是 UTF-8 编码，无法读取")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{label}{path} 不是合法 JSON：第 {e.lineno} 行第 {e.colno} 列 {e.msg}")
+    except OSError as e:
+        raise ValueError(f"{label}读取失败 {path}：{e}")
+
+
 def append_log(path, results):
     today = date.today()
-    log_path = Path(path)
-    entries = []
-    if log_path.exists():
-        try:
-            entries = json.loads(log_path.read_text(encoding="utf-8-sig"))
-        except json.JSONDecodeError:
-            entries = []
+    entries = read_json_or_none(path, "封存档案 ") or []
+    if not isinstance(entries, list):
+        raise ValueError(f"封存档案 {path} 顶层必须是数组")
     added = 0
     for r in results:
         months = r.get("review_months") or REVIEW_MONTHS.get(r["tier_index"])
@@ -1228,16 +1316,18 @@ def append_log(path, results):
             }
         )
         added += 1
-    log_path.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json(path, entries, "封存档案 ")
     return added, len(entries)
 
 
 def review_log(path):
-    log_path = Path(path)
-    if not log_path.exists():
-        print(f"档案不存在：{path}")
+    entries = read_json_or_none(path, "封存档案 ")
+    if entries is None:
+        print(f"档案不存在：{path}（先用 --log 建立封存档案）")
         return 0
-    entries = json.loads(log_path.read_text(encoding="utf-8-sig"))
+    if not isinstance(entries, list):
+        raise ValueError(f"封存档案 {path} 顶层必须是数组")
+    entries = [e for e in entries if isinstance(e, dict) and e.get("review_date")]
     today = date.today().isoformat()
     due = [e for e in entries if e["review_date"] <= today]
     pending = [e for e in entries if e["review_date"] > today]
@@ -1262,13 +1352,36 @@ def review_log(path):
 
 # ---------- 输入 ----------
 
+JSON_HINTS = (
+    "常见原因：用了中文引号「」“”、字段末尾多了逗号、或把注释写进了 JSON"
+)
+
+
 def load_items(path):
+    """读入物品 JSON；任何读不懂的情况都给一行可操作的错误，而不是 traceback。"""
+    if Path(path).is_dir():
+        raise ValueError(f"{path} 是目录，不是 JSON 文件——请指向具体的 .json 文件")
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+        text = Path(path).read_text(encoding="utf-8-sig")
     except FileNotFoundError:
-        raise ValueError(f"找不到输入文件 {path}")
+        raise ValueError(
+            f"找不到输入文件 {path}——请确认路径，或用 --interactive 交互录入"
+        )
+    except IsADirectoryError:
+        raise ValueError(f"{path} 是目录，不是 JSON 文件——请指向具体的 .json 文件")
+    except UnicodeDecodeError:
+        raise ValueError(
+            f"{path} 不是 UTF-8 编码（可能是 GBK）。用记事本另存为 UTF-8，或直接粘贴内容用 --interactive"
+        )
+    except PermissionError:
+        raise ValueError(f"没有权限读取 {path}")
+    except OSError as e:
+        raise ValueError(f"读取 {path} 失败：{e}")
+
+    try:
+        data = json.loads(text)
     except json.JSONDecodeError as e:
-        raise ValueError(f"{path} 不是合法 JSON（{e}）")
+        raise ValueError(f"{path} 不是合法 JSON：第 {e.lineno} 行第 {e.colno} 列 {e.msg}。{JSON_HINTS}")
 
     if isinstance(data, dict) and "items" in data:
         items = data["items"]
@@ -1277,9 +1390,11 @@ def load_items(path):
     elif isinstance(data, dict):
         items = [data]
     else:
-        raise ValueError("输入必须是对象、数组或包含 items 的对象")
+        raise ValueError("输入必须是对象、数组，或包含 items 的对象")
+    if not isinstance(items, list):
+        raise ValueError('items 必须是数组，例如 {"items":[{"name":"旧登山杖","scores":{...}}]}')
     if not items:
-        raise ValueError("输入中没有任何物品")
+        raise ValueError("输入中没有任何物品——至少给一件，例如 {\"items\":[{\"name\":\"旧手机\"}]}")
     return items
 
 
@@ -1317,16 +1432,25 @@ def interactive_collect():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="荷丛 Lightener 物品去留决策系统")
+    parser = argparse.ArgumentParser(
+        description="荷丛 Lightener 物品去留决策系统",
+        epilog="示例：python assess_item.py --input items.json --out report.md --html report.html",
+    )
     parser.add_argument("--input", help="物品 JSON 文件")
     parser.add_argument("--interactive", action="store_true", help="交互问答录入")
-    parser.add_argument("--preset", default="balanced", help="权重方案")
-    parser.add_argument("--weights", help="自定义权重 JSON，如 '{\"usage\":0.35}'")
+    parser.add_argument(
+        "--preset", default="balanced", choices=sorted(PRESETS), help="权重方案（默认 balanced）"
+    )
+    parser.add_argument("--weights", help="自定义权重，如 sentiment=0.05,usage=0.35 或 '{\"usage\":0.35}'")
     parser.add_argument("--out", help="Markdown 报告输出路径")
     parser.add_argument("--html", dest="html_out", help="HTML 报告输出路径")
     parser.add_argument("--json", dest="json_out", help="结构化结果输出路径")
-    parser.add_argument("--category", help="品类基线 key，未提供分数的维度按该品类推断")
-    parser.add_argument("--economy", help="经济档位：tight / normal / comfortable，默认 normal")
+    parser.add_argument(
+        "--category", choices=sorted(CATEGORY_PRIORS), help="品类基线 key，未提供分数的维度按该品类推断"
+    )
+    parser.add_argument(
+        "--economy", choices=sorted(ECONOMY_LEVELS), help="经济档位，默认 normal"
+    )
     parser.add_argument("--capacity", help="容量上限（7·5·1）：3 表示全局；clothing:10,book:20 按品类分别设限")
     parser.add_argument("--no-redundancy", action="store_true", help="关闭同类冗余判定（同用途只留一件）")
     parser.add_argument("--log", dest="log_file", help="把需复评的物品写入封存档案（JSON）")
@@ -1383,7 +1507,11 @@ def main():
         return 0
 
     if args.review_file:
-        review_log(args.review_file)
+        try:
+            review_log(args.review_file)
+        except ValueError as e:
+            print(f"错误：{e}", file=sys.stderr)
+            return 2
         return 0
 
     if not args.input and not args.interactive:
@@ -1402,12 +1530,27 @@ def main():
             return 2
 
     warnings = []
+    if args.interactive and args.input:
+        warnings.append("同时给了 --input 和 --interactive：以交互录入为准，--input 已忽略")
     try:
         weights = resolve_weights(args.preset, args.weights, warnings)
-        items = interactive_collect() if args.interactive else load_items(args.input)
+        try:
+            items = interactive_collect() if args.interactive else load_items(args.input)
+        except (EOFError, KeyboardInterrupt):
+            print("\n已取消录入（没有输入任何物品）。", file=sys.stderr)
+            return 2
         results = assess_all(items, weights, args.preset, args.category, args.economy or "normal")
     except ValueError as e:
         print(f"错误：{e}", file=sys.stderr)
+        return 2
+    except (KeyError, TypeError, AttributeError, IndexError) as e:
+        # 到这里说明输入结构与文档不符——给可操作提示，而不是甩一脸 traceback
+        print(
+            f"错误：输入结构有问题（{type(e).__name__}）。"
+            "请检查 scores / flags / evidence 的类型是否与文档一致"
+            "（字段说明见 references/evaluation-workflow.md）",
+            file=sys.stderr,
+        )
         return 2
 
     if not args.no_redundancy or limits:
@@ -1422,21 +1565,23 @@ def main():
     report = render_text(results)
     print(report)
 
-    if args.out:
-        Path(args.out).write_text(render_markdown(results, args.preset), encoding="utf-8")
-        print(f"\nMarkdown 报告已写入 {args.out}")
-    if args.html_out:
-        Path(args.html_out).write_text(render_html(results, args.preset), encoding="utf-8")
-        print(f"HTML 报告已写入 {args.html_out}")
-    if args.json_out:
-        Path(args.json_out).write_text(
-            json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
-        print(f"结构化结果已写入 {args.json_out}")
+    try:
+        if args.out:
+            write_text(args.out, render_markdown(results, args.preset), "Markdown 报告")
+            print(f"\nMarkdown 报告已写入 {args.out}")
+        if args.html_out:
+            write_text(args.html_out, render_html(results, args.preset), "HTML 报告")
+            print(f"HTML 报告已写入 {args.html_out}")
+        if args.json_out:
+            write_json(args.json_out, results, "结构化结果")
+            print(f"结构化结果已写入 {args.json_out}")
 
-    if args.log_file:
-        added, total_entries = append_log(args.log_file, results)
-        print(f"封存档案已更新 {args.log_file}：新增 {added} 条，共 {total_entries} 条")
+        if args.log_file:
+            added, total_entries = append_log(args.log_file, results)
+            print(f"封存档案已更新 {args.log_file}：新增 {added} 条，共 {total_entries} 条")
+    except ValueError as e:
+        print(f"错误：{e}", file=sys.stderr)
+        return 2
 
     for w in warnings:
         print(f"提示：{w}", file=sys.stderr)

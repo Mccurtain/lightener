@@ -37,6 +37,8 @@
 - 一次要处理几十件，需要排出优先级
 - 卡在"舍不得"上，需要有人把理由拆开给你看
 
+> **边界**：只管生活物品的取舍，不替代法律、医疗、财务等专业判断；涉及证件、处方药、危险废弃物时请遵循当地法规与专业渠道。
+
 
 ## 快速上手
 
@@ -98,6 +100,71 @@ python scripts/assess_item.py --interactive
 
 物品 JSON 支持的字段：`name`（必填）、`scores`、`category`、`evidence`、`flags`（`safety` / `expired` / `irreparable` / `document`）、`owner`、`economy`、`swings`、`wtp`、`depends_on`、`host_gone`。
 
+> 输入写错不会甩 traceback：脚本会把问题指到第几行第几列，并给出正确写法。
+> 拿不准就看 `references/faq.md`（20 条 FAQ + 反模式清单）。
+
+## 完整示例：从一句话到结论
+
+**用户原话**：
+
+> 一个旧手机的包装盒，手机已经卖掉了，盒子一直在抽屉里，没地方放。
+
+**抽维度**：`phone_box` 品类基线 `0 1 4 1 1 4`（使用 / 未来 / 功能 / 替代 / 情感 / 空间），主件已不在 → 使用频率与未来需求按 0 计，标 `host_gone`。
+
+**`items.json`**：
+
+```json
+{
+  "items": [
+    {
+      "name": "旧手机包装盒",
+      "category": "phone_box",
+      "host_gone": true,
+      "scores": {"usage": 0, "future": 0, "condition": 4, "replace": 1, "sentiment": 1, "space": 4},
+      "evidence": {"usage": "手机已转卖，盒子半年没动过", "space": "抽屉一格"}
+    }
+  ]
+}
+```
+
+**命令**：
+
+```bash
+python scripts/assess_item.py --input items.json --out report.md --html report.html
+```
+
+**报告节选**：
+
+```text
+物品：旧手机包装盒    权重方案：balanced    品类：手机 / 数码包装盒
+总分：18.5 / 100  [██████░░░░░░░░░░░░░░░░░░░░░░░░]
+标尺：0 丢弃 ─ 25 流转 ─ 40 暂存 ─ 55 降级 ─ 70 保留 ─ 100
+结论：建议丢弃    处置：丢弃 / 回收
+下一步：先问亲友或挂免费赠送，无人要再回收——完好的东西让它去被需要的地方
+· 主件已不在：配件失去服务对象，使用频率与未来需求按 0 计
+· 闲置物品：功能状态与替代难度按半折计入——主轴是现在的你，不是物品还能用、值多少钱
+```
+
+**回复用户时给**：总分、结论、处置路径、下一步动作，以及影响最大的 1–2 个维度（这里是"使用频率 0 + 主件已不在"）。
+
+## 出错时长什么样
+
+```text
+$ python scripts/assess_item.py --input items.json
+错误：items.json 不是合法 JSON：第 3 行第 44 列 Expecting property name enclosed in double quotes。
+常见原因：用了中文引号「」“”、字段末尾多了逗号、或把注释写进了 JSON
+```
+
+```text
+$ python scripts/assess_item.py --input items.json
+错误：「旧登山杖」的分数写在了顶层（usage）。分数必须放进 scores 字段：
+{"name":"旧登山杖","scores":{"usage":3}}
+```
+
+```text
+! 旧手机：flags 里的 expiredd 不是已知标记，已忽略（可选：safety、expired、irreparable、document）
+```
+
 ## 六维与结论
 
 六个维度统一 **0–5 分，分数越高越倾向保留**：
@@ -130,6 +197,7 @@ lightener/
 ├── SKILL.md                 # 技能主体：六维速查表、品类基线、硬规则、操作流程
 ├── README.md                # 本文件
 ├── LICENSE                  # MIT
+├── CONTRIBUTING.md          # 贡献流程：PR 一律提到 pending 分支
 ├── scripts/
 │   ├── assess_item.py       # 主脚本：打分、硬规则、分档、报告渲染
 │   ├── evaluate.py          # 通用加权汇总引擎（被主脚本复用）
@@ -141,11 +209,13 @@ lightener/
 │   ├── item-rubric.md       # 六维完整分档定义与边界争议
 │   ├── category-priors.md   # 从一句话里抽维度
 │   ├── evaluation-workflow.md # 答案→分数映射、JSON schema、摇摆话术
+│   ├── faq.md               # 20 条 FAQ + 反模式清单（用户追问 / 报错看不懂时看）
 │   └── calibration.md       # 标定样例与回归门禁
-└── assets/
-    ├── assessment-form.html # 网页版评估表单
-    ├── report-template.md   # 结论输出模板
-    └── rules.json           # 生成物，不手写
+├── assets/
+│   ├── assessment-form.html # 网页版评估表单
+│   ├── report-template.md   # 结论输出模板
+│   └── rules.json           # 生成物，不手写
+└── .github/                 # CI、PR / Issue 模板
 ```
 
 日常使用只需 `assess_item.py`；`references/` 里的内容由技能按需加载，不必预先通读。
@@ -170,3 +240,6 @@ MIT，见 `LICENSE`。
 
 ## 声明
 本SKILL仅提供决策辅助，不替代法律、医疗、财务等专业判断；涉及证件、处方药、危险废弃物时，请遵循当地法规与专业渠道。
+
+---
+如有问题或建议，欢迎提交 Issue 或 PR。
